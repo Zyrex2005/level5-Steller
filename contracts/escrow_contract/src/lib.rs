@@ -4,7 +4,7 @@ use soroban_sdk::{
 };
 
 #[contracttype]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum JobStatus {
     Created = 0,
     Funded = 1,
