@@ -11,16 +11,16 @@ jobs:
     name: Deploy Soroban WASM Contracts to Testnet
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v4
 
       - name: Install Rust Toolchain
-        uses: dtolnay/rust-toolchain@master
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 'stable'
           targets: wasm32-unknown-unknown
 
       - name: Cache Cargo registry and binaries
-        uses: actions/cache@v4.2.2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -38,17 +38,6 @@ jobs:
       - name: Install Stellar CLI
         run: cargo binstall --no-confirm stellar-cli
 
-      - name: Update Cargo Dependencies
-        run: |
-          cd contracts/escrow_contract
-          cargo update -p base64ct --precise 1.6.0 || true
-          cargo update -p zeroize --precise 1.8.1 || true
-          cargo update -p ethnum || true
-          cd ../reputation_contract
-          cargo update -p base64ct --precise 1.6.0 || true
-          cargo update -p zeroize --precise 1.8.1 || true
-          cargo update -p ethnum || true
-
       - name: Build and Optimize Contracts
         run: |
           cd contracts/escrow_contract
@@ -57,7 +46,7 @@ jobs:
 
           cd ../reputation_contract
           cargo build --target wasm32-unknown-unknown --release
-          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.wasm
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.optimized.wasm || stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.wasm
 
       - name: Deploy to Testnet
         run: |
