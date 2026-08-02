@@ -4,6 +4,7 @@
 ![Stellar](https://img.shields.io/badge/Stellar-Testnet-00F5D4.svg)
 ![Soroban SDK](https://img.shields.io/badge/Soroban%20SDK-20.0-7B2CBF.svg)
 ![CI Pipeline](https://img.shields.io/badge/CI-Passing-emerald.svg)
+![CD Pipeline](https://img.shields.io/badge/CD-GitHub%20Pages%20%26%20WASM-blue.svg)
 
 **SkillEscrow** is a growth-stage decentralized escrow and reputation platform built on Stellar Soroban smart contracts. It eliminates payment default risks for freelancers and clients through trustless milestone deposits, automated multi-sig style arbitration, and verifiable on-chain reputation badges.
 
