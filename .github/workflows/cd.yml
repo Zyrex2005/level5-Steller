@@ -15,8 +15,10 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4.2.2
 
-      - name: Add WASM Target
-        run: rustup target add wasm32-unknown-unknown
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@1.77.0
+        with:
+          targets: wasm32-unknown-unknown
 
       - name: Update Cargo Dependencies
         run: |
