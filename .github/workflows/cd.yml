@@ -1,0 +1,104 @@
+name: SkillEscrow CD Pipeline (Continuous Deployment)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  deploy-contracts:
+    name: Build & Release Soroban WASM Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain for WASM
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Build Escrow WASM Contract
+        run: |
+          cd contracts/escrow_contract
+          cargo build --target wasm32-unknown-unknown --release
+
+      - name: Build Reputation WASM Contract
+        run: |
+          cd contracts/reputation_contract
+          cargo build --target wasm32-unknown-unknown --release
+
+      - name: Upload Contract WASM Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: soroban-contracts-wasm
+          path: |
+            contracts/escrow_contract/target/wasm32-unknown-unknown/release/*.wasm
+            contracts/reputation_contract/target/wasm32-unknown-unknown/release/*.wasm
+
+  deploy-backend:
+    name: Build & Package Backend Relay Service
+    runs-on: ubuntu-latest
+    needs: [deploy-contracts]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Compile Backend TypeScript
+        run: |
+          cd backend
+          npm run build
+
+      - name: Upload Backend Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: |
+            backend/dist
+            backend/package.json
+
+  deploy-frontend:
+    name: Build & Deploy Web Frontend
+    runs-on: ubuntu-latest
+    needs: [deploy-contracts]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Frontend Web Bundle
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Upload Frontend Production Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-production-build
+          path: frontend/dist
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/dist
