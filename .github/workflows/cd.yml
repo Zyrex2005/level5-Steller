@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Add WASM Target
         run: rustup target add wasm32-unknown-unknown
@@ -54,7 +54,7 @@ jobs:
       - deploy-contracts
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -86,7 +86,7 @@ jobs:
       - deploy-contracts
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
