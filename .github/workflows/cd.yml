@@ -18,6 +18,11 @@ jobs:
       - name: Add WASM Target
         run: rustup target add wasm32-unknown-unknown
 
+      - name: Update Cargo Dependencies
+        run: |
+          cd contracts/escrow_contract && cargo update -p ethnum || true
+          cd ../reputation_contract && cargo update -p ethnum || true
+
       - name: Build Escrow WASM Contract
         run: |
           cd contracts/escrow_contract
