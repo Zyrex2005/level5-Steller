@@ -1,0 +1,83 @@
+name: Deploy Contracts to Testnet
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  deploy:
+    name: Deploy Soroban WASM Contracts to Testnet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache cargo registry and binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cargo/bin
+            contracts/escrow_contract/target
+            contracts/reputation_contract/target
+          key: ${{ runner.os }}-cargo-deploy-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install cargo-binstall
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install Stellar CLI
+        run: cargo binstall --no-confirm stellar-cli
+
+      - name: Update Cargo Dependencies
+        run: |
+          cd contracts/escrow_contract
+          cargo update -p base64ct --precise 1.6.0 || true
+          cargo update -p zeroize --precise 1.8.1 || true
+          cargo update -p ethnum || true
+          cd ../reputation_contract
+          cargo update -p base64ct --precise 1.6.0 || true
+          cargo update -p zeroize --precise 1.8.1 || true
+          cargo update -p ethnum || true
+
+      - name: Build and Optimize Contracts
+        run: |
+          cd contracts/escrow_contract
+          cargo build --target wasm32-unknown-unknown --release
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_escrow_contract.wasm
+
+          cd ../reputation_contract
+          cargo build --target wasm32-unknown-unknown --release
+          stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.wasm
+
+      - name: Deploy to Testnet
+        run: |
+          echo "Generating deployer identity..."
+          stellar keys generate deployer --network testnet
+          stellar keys fund deployer --network testnet
+
+          echo "Deploying Escrow Contract..."
+          ESCROW_ID=$(stellar contract deploy \
+            --wasm contracts/escrow_contract/target/wasm32-unknown-unknown/release/skillescrow_escrow_contract.optimized.wasm \
+            --source deployer \
+            --network testnet 2>escrow_deploy_err.log) || { cat escrow_deploy_err.log; exit 1; }
+          echo "Escrow Contract deployed at: $ESCROW_ID"
+
+          echo "Deploying Reputation Contract..."
+          REPUTATION_ID=$(stellar contract deploy \
+            --wasm contracts/reputation_contract/target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.optimized.wasm \
+            --source deployer \
+            --network testnet 2>reputation_deploy_err.log) || { cat reputation_deploy_err.log; exit 1; }
+          echo "Reputation Contract deployed at: $REPUTATION_ID"
+
+          echo "Fetching Native XLM Asset ID..."
+          TOKEN_ID=$(stellar contract id asset --asset native --network testnet)
+          echo "Native Token ID: $TOKEN_ID"
