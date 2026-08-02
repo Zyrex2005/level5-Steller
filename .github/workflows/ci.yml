@@ -1,0 +1,50 @@
+name: SkillEscrow Level 5 CI Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-backend:
+    name: Backend API & Relay Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+      - name: Install Backend Dependencies
+        run: cd backend && npm ci
+      - name: Run Backend Unit Tests
+        run: cd backend && npm test
+
+  build-frontend:
+    name: Frontend React Build & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20.x
+      - name: Install Frontend Dependencies
+        run: cd frontend && npm ci
+      - name: Build Frontend Application
+        run: cd frontend && npm run build
+
+  test-contracts:
+    name: Soroban Smart Contract Rust Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - name: Test Escrow Contract
+        run: cd contracts/escrow_contract && cargo test
+      - name: Test Reputation Contract
+        run: cd contracts/reputation_contract && cargo test
