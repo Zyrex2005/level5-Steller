@@ -102,7 +102,8 @@ export async function executeStellarEscrowTransaction(params: {
     validDestination = params.destinationAddress;
   }
 
-  // 4. Build Stellar Payment Transaction for Escrow Deposit
+  // 4. Build Stellar Payment Transaction for Escrow Deposit (safe testnet amount)
+  const safeAmount = Math.min(amount, 10); // Safe testnet amount to prevent op_underfunded
   const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
     fee: StellarSdk.BASE_FEE,
     networkPassphrase: StellarSdk.Networks.TESTNET
@@ -111,7 +112,7 @@ export async function executeStellarEscrowTransaction(params: {
       StellarSdk.Operation.payment({
         destination: validDestination,
         asset: StellarSdk.Asset.native(),
-        amount: Math.max(1, amount).toString()
+        amount: safeAmount.toString()
       })
     )
     .setTimeout(180)
@@ -136,8 +137,8 @@ export async function executeStellarEscrowTransaction(params: {
     }
   } catch (signErr: any) {
     console.error('Freighter signing error:', signErr);
-    if (signErr?.message?.includes('declined') || signErr?.includes?.('declined')) {
-      throw new Error('Transaction was cancelled by user in Freighter Wallet.');
+    if (signErr?.message?.includes('declined') || signErr?.includes?.('declined') || signErr?.message?.includes('cancelled')) {
+      throw new Error('Transaction was cancelled in Freighter Wallet.');
     }
   }
 
