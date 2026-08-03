@@ -76,16 +76,16 @@ graph TD
 Here are the screenshots demonstrating application functionality, builds, and pipeline runs:
 
 ### 1. Wallet Connection & Main UI
-![Wallet Connection](![alt text](image-1.png))
+![Wallet Connection](![alt text](![alt text](image-2.png)))
 
 ### 2. Mobile Responsive Viewport
-![Mobile Viewport](![alt text](image-2.png))
+![Mobile Viewport](![alt text](![alt text](image-1.png)))
 
 ### 3. Transaction Confirmation & Stellar Explorer
-![Transaction Confirmation](![alt text](image-3.png))
+![Transaction Confirmation](![alt text](![alt text](image-3.png)))
 
 ### 4. CI/CD Pipeline Execution
-![CI/CD Pipeline](![alt text](![alt text](image.png)
+![CI/CD Pipeline](![alt text](![alt text](image.png)))
 ---
 
 ## 📊 User Feedback & Growth Data
