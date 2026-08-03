@@ -13,7 +13,9 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 'stable'
+          # Pinned instead of floating "stable" — avoids the ethnum <=1.5.2
+          # / TryFromIntError transmute regression present in newer stable releases.
+          toolchain: '1.90.0'
           targets: wasm32-unknown-unknown
 
       - name: Cache cargo registry and binaries
@@ -38,6 +40,7 @@ jobs:
       - name: Build and Deploy Escrow Contract
         run: |
           cd contracts/escrow_contract
+          cargo update -p ethnum --precise 1.5.3 || true
           cargo build --locked --target wasm32-unknown-unknown --release
           stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_escrow_contract.wasm
           
@@ -50,10 +53,14 @@ jobs:
             --source deployer \
             --network testnet 2>deploy_err.log) || { cat deploy_err.log; exit 1; }
           echo "Escrow Contract deployed at: $ESCROW_ID"
+          echo "ESCROW_CONTRACT_ID=$ESCROW_ID" >> $GITHUB_ENV
+          mkdir -p ../../deployed
+          echo "{\"escrow_contract\": \"$ESCROW_ID\"}" > ../../deployed/deployed_addresses.json
 
       - name: Build and Deploy Reputation Contract
         run: |
           cd contracts/reputation_contract
+          cargo update -p ethnum --precise 1.5.3 || true
           cargo build --locked --target wasm32-unknown-unknown --release
           stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.wasm
           
@@ -67,3 +74,12 @@ jobs:
           echo "Fetching Test Token (Native XLM asset) ID..."
           TOKEN_ID=$(stellar contract id asset --asset native --network testnet)
           echo "Native Token ID is: $TOKEN_ID"
+
+          python3 -c "import json; path = '../../deployed/deployed_addresses.json'; data = json.load(open(path)); data['reputation_contract'] = '$REPUTE_ID'; data['native_token_id'] = '$TOKEN_ID'; json.dump(data, open(path, 'w'), indent=2)"
+          cat ../../deployed/deployed_addresses.json
+
+      - name: Upload deployed contract addresses
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployed-addresses
+          path: deployed/deployed_addresses.json

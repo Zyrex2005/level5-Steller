@@ -17,7 +17,10 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 'stable'
+          # Pinned instead of floating "stable" — a recent stable release shipped
+          # a std-lib layout change (TryFromIntError) that breaks ethnum <=1.5.2,
+          # a transitive dependency of soroban-sdk. 1.90.0 predates that regression.
+          toolchain: '1.90.0'
           targets: wasm32-unknown-unknown
 
       - name: Cache Cargo build
@@ -37,6 +40,9 @@ jobs:
       - name: Build Escrow Contract
         run: |
           cd contracts/escrow_contract
+          # Belt-and-braces fix: force ethnum to the patched release even if
+          # Cargo.lock still resolves an older, broken version.
+          cargo update -p ethnum --precise 1.5.3 || true
           cargo build --locked --target wasm32-unknown-unknown --release
 
       - name: Run Escrow Contract Tests
@@ -47,6 +53,7 @@ jobs:
       - name: Build Reputation Contract
         run: |
           cd contracts/reputation_contract
+          cargo update -p ethnum --precise 1.5.3 || true
           cargo build --locked --target wasm32-unknown-unknown --release
 
       - name: Run Reputation Contract Tests
