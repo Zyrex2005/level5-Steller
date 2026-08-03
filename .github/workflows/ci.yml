@@ -17,7 +17,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: '1.77.0'
+          toolchain: 'stable'
           targets: wasm32-unknown-unknown
 
       - name: Cache Cargo build
@@ -37,22 +37,22 @@ jobs:
       - name: Build Escrow Contract
         run: |
           cd contracts/escrow_contract
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build --locked --target wasm32-unknown-unknown --release
 
       - name: Run Escrow Contract Tests
         run: |
           cd contracts/escrow_contract
-          cargo test --verbose
+          cargo test --locked --verbose
 
       - name: Build Reputation Contract
         run: |
           cd contracts/reputation_contract
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build --locked --target wasm32-unknown-unknown --release
 
       - name: Run Reputation Contract Tests
         run: |
           cd contracts/reputation_contract
-          cargo test --verbose
+          cargo test --locked --verbose
 
   backend:
     name: Backend Verification

@@ -13,7 +13,7 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: '1.77.0'
+          toolchain: 'stable'
           targets: wasm32-unknown-unknown
 
       - name: Cache cargo registry and binaries
@@ -38,7 +38,7 @@ jobs:
       - name: Build and Deploy Escrow Contract
         run: |
           cd contracts/escrow_contract
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build --locked --target wasm32-unknown-unknown --release
           stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_escrow_contract.wasm
           
           echo "Generating identities..."
@@ -54,7 +54,7 @@ jobs:
       - name: Build and Deploy Reputation Contract
         run: |
           cd contracts/reputation_contract
-          cargo build --target wasm32-unknown-unknown --release
+          cargo build --locked --target wasm32-unknown-unknown --release
           stellar contract optimize --wasm target/wasm32-unknown-unknown/release/skillescrow_reputation_contract.wasm
           
           echo "Deploying Reputation Contract..."
