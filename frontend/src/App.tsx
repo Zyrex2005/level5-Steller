@@ -5,6 +5,7 @@ import { CreateJobModal } from './components/CreateJobModal';
 import { JobDetailModal } from './components/JobDetailModal';
 import { StatsPage } from './pages/StatsPage';
 import { analytics } from './utils/analytics';
+import { isConnected, requestAccess, getAddress } from '@stellar/freighter-api';
 
 const INITIAL_JOBS: Job[] = [
   {
@@ -70,20 +71,50 @@ export function App() {
     analytics.track('page_view');
   }, []);
 
-  const handleConnectWallet = (demo: boolean = false) => {
+  const handleConnectWallet = async (demo: boolean = false) => {
     if (demo) {
       const demoWallet = 'GCAB' + Math.random().toString(36).substring(2, 10).toUpperCase() + 'TESTNET';
       setWalletAddress(demoWallet);
       setIsPreviewMode(false);
       setOnboardingStep(2);
       analytics.track('wallet_connect', demoWallet, { type: 'demo' });
-    } else {
-      // Standard Freighter check simulation
-      const freighterWallet = 'GDFR' + Math.random().toString(36).substring(2, 10).toUpperCase() + 'FREIGHTER';
-      setWalletAddress(freighterWallet);
-      setIsPreviewMode(false);
-      setOnboardingStep(2);
-      analytics.track('wallet_connect', freighterWallet, { type: 'freighter' });
+      return;
+    }
+
+    try {
+      // 1. Check if Freighter extension is present
+      const connectedRes = await isConnected();
+      const isExtAvailable = typeof connectedRes === 'boolean' ? connectedRes : (connectedRes as any)?.isConnected;
+
+      if (!isExtAvailable && !(window as any).freighterApi && !(window as any).freighter) {
+        alert('Freighter Wallet extension not detected in your browser!\n\nPlease install Freighter from https://www.freighter.app/ or click "Demo Mode" to test with a simulated wallet.');
+        return;
+      }
+
+      // 2. Request user authorization / password unlock prompt via Freighter API
+      let accessResult = await requestAccess();
+      let activeAddress = typeof accessResult === 'string' ? accessResult : (accessResult as any)?.address || (accessResult as any)?.publicKey;
+
+      if (!activeAddress) {
+        const addrRes = await getAddress();
+        activeAddress = typeof addrRes === 'string' ? addrRes : (addrRes as any)?.address;
+      }
+
+      if (activeAddress && typeof activeAddress === 'string') {
+        setWalletAddress(activeAddress);
+        setIsPreviewMode(false);
+        setOnboardingStep(2);
+        analytics.track('wallet_connect', activeAddress, { type: 'freighter' });
+      } else {
+        alert('Could not retrieve active account from Freighter. Please unlock your Freighter wallet extension and try again.');
+      }
+    } catch (err: any) {
+      console.error('Freighter connection error:', err);
+      if (err?.message?.includes('User declined') || err?.includes?.('declined')) {
+        alert('Freighter wallet connection request was declined.');
+      } else {
+        alert(`Freighter Connection Error: ${err?.message || 'Access rejected or wallet locked.'}`);
+      }
     }
   };
 
@@ -147,6 +178,7 @@ export function App() {
             jobs={jobs}
             onSelectJob={job => setSelectedJob(job)}
             onOpenCreateModal={() => setIsCreateModalOpen(true)}
+            onViewStats={() => setCurrentTab('stats')}
           />
         ) : (
           <StatsPage />

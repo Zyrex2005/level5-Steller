@@ -1,5 +1,12 @@
 # SkillEscrow — Stellar Soroban Level 5 (Blue Belt)
 
+## 📽️ Submission Materials
+- **Live Demo Platform:** [https://level5-steller-henna.vercel.app/](https://level5-steller-henna.vercel.app/) 
+- **Demo Video:** See [docs/DEMO_SCRIPT.md](https://drive.google.com/file/d/1neEu3Q9-qhprbI7a_UMzvpfzkuq3RttT/view?usp=sharing)
+- **Collected User Feedback Excel/CSV:** See [docs/user-feedback-export.csv](file:///c:/Users/user/OneDrive/Desktop/Steller%20Level-4/docs/user-feedback-export.csv)
+
+---
+
 ![License](https://img.shields.io/badge/License-MIT-purple.svg)
 ![Stellar](https://img.shields.io/badge/Stellar-Testnet-00F5D4.svg)
 ![Soroban SDK](https://img.shields.io/badge/Soroban%20SDK-20.0-7B2CBF.svg)
@@ -63,6 +70,22 @@ graph TD
 | **RPC Caching & Retry** | Exponential backoff relay middleware for Soroban RPC 429 errors | [server.ts](file:///backend/src/server.ts), [sorobanClient.ts](file:///frontend/src/utils/sorobanClient.ts) | `https://github.com/you/repo/commit/<INSERT_COMMIT_HASH_5>` |
 | **Funnel & /stats Dashboard**| Public proof of active usage, 50+ wallet tracking, conversion funnel | [StatsPage.tsx](file:///frontend/src/pages/StatsPage.tsx), [analytics.ts](file:///frontend/src/utils/analytics.ts) | `https://github.com/you/repo/commit/<INSERT_COMMIT_HASH_6>` |
 
+---
+## Screenshots
+
+Here are the screenshots demonstrating application functionality, builds, and pipeline runs:
+
+### 1. Wallet Connection & Main UI
+![Wallet Connection](![alt text](image-1.png))
+
+### 2. Mobile Responsive Viewport
+![Mobile Viewport](![alt text](image-2.png))
+
+### 3. Transaction Confirmation & Stellar Explorer
+![Transaction Confirmation](![alt text](image-3.png))
+
+### 4. CI/CD Pipeline Execution
+![CI/CD Pipeline](![alt text](![alt text](image.png)
 ---
 
 ## 📊 User Feedback & Growth Data

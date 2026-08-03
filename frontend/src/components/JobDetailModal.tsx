@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, AlertTriangle, Share2, Check, Star, Lock, RefreshCw, Send } from 'lucide-react';
+import { X, ShieldCheck, AlertTriangle, Share2, Check, Star, Lock, RefreshCw, Send, ExternalLink } from 'lucide-react';
 import { Job } from './JobBoard';
 import { analytics } from '../utils/analytics';
-import { callSorobanRpcWithRetry } from '../utils/sorobanClient';
+import { executeStellarEscrowTransaction } from '../utils/sorobanClient';
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -23,39 +23,53 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [txResult, setTxResult] = useState<{
+    txHash: string;
+    explorerUrl: string;
+    amountDeducted?: number;
+  } | null>(null);
 
   if (!job) return null;
 
   const handleAction = async (actionType: 'fund' | 'submit' | 'approve' | 'dispute' | 'arbitrate_client' | 'arbitrate_freelancer' | 'refund') => {
     setIsLoading(true);
     setErrorMessage(null);
+    setTxResult(null);
 
-    // Call Soroban RPC simulation helper with retry
-    const res = await callSorobanRpcWithRetry('https://soroban-testnet.stellar.org', {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getTransactionStatus',
-      params: ['mock_tx_hash']
-    });
+    try {
+      // Execute Stellar Escrow transaction & trigger Freighter wallet signature popup!
+      const res = await executeStellarEscrowTransaction({
+        actionType,
+        amount: job.amount,
+        walletAddress,
+        destinationAddress: job.client
+      });
 
-    setIsLoading(false);
+      setIsLoading(false);
 
-    if (res.error && !res.result) {
-      setErrorMessage(res.actionableMessage || 'Transaction failed');
-      return;
+      if (res.success) {
+        setTxResult({
+          txHash: res.txHash,
+          explorerUrl: res.explorerUrl,
+          amountDeducted: res.amountDeducted
+        });
+
+        let newStatus: Job['status'] = job.status;
+        if (actionType === 'fund') newStatus = 'Funded';
+        if (actionType === 'submit') newStatus = 'InReview';
+        if (actionType === 'approve') newStatus = 'Completed';
+        if (actionType === 'dispute') newStatus = 'Disputed';
+        if (actionType === 'arbitrate_client') newStatus = 'Refunded';
+        if (actionType === 'arbitrate_freelancer') newStatus = 'Completed';
+        if (actionType === 'refund') newStatus = 'Refunded';
+
+        onUpdateJobStatus(job.id, newStatus);
+        analytics.recordTransaction(walletAddress || 'G...PREVIEW', `job_action_${actionType}`);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(err.message || 'Transaction execution failed or was cancelled in wallet.');
     }
-
-    let newStatus: Job['status'] = job.status;
-    if (actionType === 'fund') newStatus = 'Funded';
-    if (actionType === 'submit') newStatus = 'InReview';
-    if (actionType === 'approve') newStatus = 'Completed';
-    if (actionType === 'dispute') newStatus = 'Disputed';
-    if (actionType === 'arbitrate_client') newStatus = 'Refunded';
-    if (actionType === 'arbitrate_freelancer') newStatus = 'Completed';
-    if (actionType === 'refund') newStatus = 'Refunded';
-
-    onUpdateJobStatus(job.id, newStatus);
-    analytics.recordTransaction(walletAddress || 'G...PREVIEW', `job_action_${actionType}`);
   };
 
   const handleRatingSubmit = (e: React.FormEvent) => {
@@ -91,11 +105,48 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
         <div className="p-6 space-y-6 overflow-y-auto">
           {/* Actionable Error Banner */}
           {errorMessage && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start space-x-2">
-              <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold">Action Required:</p>
-                <p className="mt-0.5">{errorMessage}</p>
+            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center justify-between">
+              <div className="flex items-start space-x-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Action Required:</p>
+                  <p className="mt-0.5">{errorMessage}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setErrorMessage(null)}
+                className="ml-3 px-3 py-1.5 bg-purple-600/40 hover:bg-purple-600/60 text-purple-200 border border-purple-400/40 rounded-lg text-xs font-semibold whitespace-nowrap transition-all shrink-0"
+              >
+                Switch to Demo Mode
+              </button>
+            </div>
+          )}
+
+          {/* Confirmed Transaction & Explorer Link Banner */}
+          {txResult && (
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs space-y-2.5 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="font-bold text-sm text-emerald-300">Transaction Confirmed on Stellar Testnet</span>
+                </div>
+                {txResult.amountDeducted && txResult.amountDeducted > 0 ? (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/40">
+                    -{txResult.amountDeducted} XLM Deducted
+                  </span>
+                ) : null}
+              </div>
+              <div className="font-mono text-[11px] text-slate-300 bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between overflow-hidden">
+                <span className="truncate mr-2">Tx Hash: {txResult.txHash}</span>
+                <a
+                  href={txResult.explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-sans text-xs font-semibold shrink-0 flex items-center space-x-1 transition-all shadow-md"
+                >
+                  <span>View on Stellar Expert</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
               </div>
             </div>
           )}

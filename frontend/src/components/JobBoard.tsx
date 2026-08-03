@@ -18,12 +18,13 @@ interface JobBoardProps {
   jobs: Job[];
   onSelectJob: (job: Job) => void;
   onOpenCreateModal: () => void;
+  onViewStats?: () => void;
 }
 
 const CATEGORIES = ['All', 'Development', 'Design', 'Writing', 'Web3', 'Marketing'];
 const STATUSES = ['All', 'Created', 'Funded', 'InReview', 'Disputed', 'Completed'];
 
-export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onSelectJob, onOpenCreateModal }) => {
+export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onSelectJob, onOpenCreateModal, onViewStats }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedStatus, setSelectedStatus] = useState('All');
@@ -82,16 +83,16 @@ export const JobBoard: React.FC<JobBoardProps> = ({ jobs, onSelectJob, onOpenCre
           <div className="mt-5 flex items-center space-x-3">
             <button
               onClick={onOpenCreateModal}
-              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-600/30 transition-all active:scale-95"
+              className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs sm:text-sm shadow-lg shadow-purple-600/30 transition-all active:scale-95 cursor-pointer"
             >
               Post Escrow Job
             </button>
-            <a
-              href="#stats"
-              className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition-all"
+            <button
+              onClick={onViewStats}
+              className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-semibold text-xs sm:text-sm border border-slate-700 transition-all cursor-pointer"
             >
               View Growth Stats
-            </a>
+            </button>
           </div>
         </div>
       </div>
