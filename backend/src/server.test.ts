@@ -35,4 +35,26 @@ describe('SkillEscrow Backend API', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.record.walletAddress).toEqual('GCAB...XYZW');
   });
+
+  it('POST /api/feedback should store user ratings and feedback', async () => {
+    const res = await request(app)
+      .post('/api/feedback')
+      .send({
+        name: 'Alice Developer',
+        email: 'alice@example.com',
+        walletAddress: 'GCAB1234567890XYZW',
+        rating: 5,
+        feedback: 'Extremely fast contract settlement and intuitive UX.'
+      });
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.entry.rating).toEqual(5);
+  });
+
+  it('POST /api/rpc-cache should return 400 when missing rpcUrl or body', async () => {
+    const res = await request(app).post('/api/rpc-cache').send({});
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.error).toBeDefined();
+  });
 });
+

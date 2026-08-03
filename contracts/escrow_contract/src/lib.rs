@@ -344,4 +344,63 @@ mod test {
         let resolved_job = client.get_job(&job_id);
         assert_eq!(resolved_job.status, JobStatus::Completed);
     }
+
+    #[test]
+    fn test_refund_unfunded_job() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, EscrowContract);
+        let client = EscrowContractClient::new(&env, &contract_id);
+
+        let arbitrator = Address::generate(&env);
+        let client_addr = Address::generate(&env);
+        let freelancer_addr = Address::generate(&env);
+
+        client.initialize(&arbitrator);
+
+        let job_id = client.create_job(
+            &client_addr,
+            &freelancer_addr,
+            &2500000i128,
+            &String::from_str(&env, "Technical Writing"),
+            &String::from_str(&env, "Writing"),
+        );
+
+        let refunded = client.refund_job(&job_id);
+        assert!(refunded);
+
+        let job = client.get_job(&job_id);
+        assert_eq!(job.status, JobStatus::Refunded);
+    }
+
+    #[test]
+    fn test_dispute_favor_client() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, EscrowContract);
+        let client = EscrowContractClient::new(&env, &contract_id);
+
+        let arbitrator = Address::generate(&env);
+        let client_addr = Address::generate(&env);
+        let freelancer_addr = Address::generate(&env);
+
+        client.initialize(&arbitrator);
+
+        let job_id = client.create_job(
+            &client_addr,
+            &freelancer_addr,
+            &3000000i128,
+            &String::from_str(&env, "Banner Art"),
+            &String::from_str(&env, "Design"),
+        );
+
+        client.fund_job(&job_id);
+        client.raise_dispute(&job_id, &freelancer_addr);
+        client.resolve_dispute(&job_id, &false);
+
+        let job = client.get_job(&job_id);
+        assert_eq!(job.status, JobStatus::Refunded);
+    }
 }

@@ -117,4 +117,37 @@ mod test {
         assert_eq!(profile.completed_jobs, 1);
         assert_eq!(profile.badge_tier, String::from_str(&env, "Bronze"));
     }
+
+    #[test]
+    fn test_badge_tier_upgrades() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register_contract(None, ReputationContract);
+        let client = ReputationContractClient::new(&env, &contract_id);
+
+        let reviewer = Address::generate(&env);
+        let user = Address::generate(&env);
+        let feedback = String::from_str(&env, "Excellent service");
+
+        // 1st job - Bronze
+        client.record_rating(&reviewer, &user, &5, &feedback);
+
+        // 2nd job - Silver (>= 2 jobs, avg >= 4.0)
+        let profile2 = client.record_rating(&reviewer, &user, &5, &feedback);
+        assert_eq!(profile2.badge_tier, String::from_str(&env, "Silver"));
+
+        // 3rd to 5th jobs - Gold (>= 5 jobs, avg >= 4.0)
+        client.record_rating(&reviewer, &user, &5, &feedback);
+        client.record_rating(&reviewer, &user, &5, &feedback);
+        let profile5 = client.record_rating(&reviewer, &user, &5, &feedback);
+        assert_eq!(profile5.badge_tier, String::from_str(&env, "Gold"));
+
+        // Up to 10 jobs - Diamond (>= 10 jobs, avg >= 4.5)
+        for _ in 0..5 {
+            client.record_rating(&reviewer, &user, &5, &feedback);
+        }
+        let profile10 = client.get_profile(&user);
+        assert_eq!(profile10.badge_tier, String::from_str(&env, "Diamond"));
+    }
 }
